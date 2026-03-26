@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Management - E-Trans{% endblock %}
+
+{% block css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/management_dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Indicateur de chargement global -->
+<div id="loading-overlay" class="loading-overlay">
+  <div class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Chargement des données...</p>
+    <div class="loading-subtitle" id="loading-message">Veuillez patienter</div>
+  </div>
+</div>
+
+<div class="dashboard-header">
+  <div class="welcome-section">
+    <h1>Dashboard management</h1>
+    <p class="welcome-message">Bonjour <strong>{{ current_user.username }}</strong></p>
+  </div>
+</div>
+
+<div class="kpi-section">
+{% if has_perm("card.freight") %}
+  <div class="kpi-card" data-key="generated" style="border-left-color:var(--color-info);">
+    <div class="kpi-title">Freight</div>
+    <div class="kpi-sub" style="font-size:0.85rem;color:#000000;"><strong >Ce mois</strong> — <span class="kpi-value-inline" data-kpi-value="generated">0</span></div>
+    <div class="kpi-sub" style="font-size:0.85rem;color:#000000;margin-top:4px;"><strong>Année:</strong> <span class="kpi-value-inline" data-kpi-value="generated-year">0</span></div>
+  </div>
+{% endif %}
+{% if has_perm("card.avis_non_timbres") %}
+  <div class="kpi-card" data-key="not-stamped" style="border-left-color:var(--color-danger); position:relative;">
+    <div class="kpi-badge" data-kpi-count="not-stamped-count">0</div>
+    <div class="kpi-title">Avis non timbrés</div>
+    <div class="kpi-value" data-kpi-value="not-stamped">0 TND</div>
+    <div class="kpi-sub">À traiter</div>
+  </div>
+{% endif %}
+{% if has_perm("card.marchandises") %}
+  <div class="kpi-card" data-key="not-withdrawn" style="border-left-color:var(--color-warning);">
+    <div class="kpi-title">Marchandises non retirées</div>
+    <div class="kpi-value">19</div>
+    <div class="kpi-sub">En attente</div>
+  </div>
+{% endif %}
+{% if has_perm("card.timbrage") %}
+  <div class="kpi-card" data-key="invoices" style="border-left-color:var(--color-success);">
+    <div class="kpi-title">Factures Timbrage (mois)</div>
+    <div class="kpi-value" data-kpi-value="invoices">0</div>
+  </div>
+{% endif %}
+{% if has_perm("card.agent") %}
+    <div class="kpi-card" data-key="invoices-agent" style="border-left-color:#6f42c1;">
+      <div class="kpi-title">Factures - Agent (mois)</div>
+      <div class="kpi-value" data-kpi-value="invoices-agent">0</div>
+    <div class="kpi-sub" style="font-size:0.85rem;color:#000000;margin-top:6px;">
+       <span class="kpi-value-inline" data-kpi-value="agent-eur">0</span>
+      &nbsp;&nbsp; <span class="kpi-value-inline" data-kpi-value="agent-usd">0</span>
+    </div>
+    <!-- invoice count removed per request -->
+    </div>
+{% endif %}
+{% if has_perm("card.surestaries") %}
+    <div class="kpi-card" data-key="invoices-surestarie" style="border-left-color:#20c997;">
+      <div class="kpi-title">Factures - Surestarie (mois)</div>
+      <div class="kpi-value" data-kpi-value="invoices-surestarie">0</div>
+    </div>
+    
+{% endif %}
+{% if has_perm("card.magasinage") %}
+    <div class="kpi-card" data-key="invoices-magasinage" style="border-left-color:#ff6600;">
+      <div class="kpi-title">Factures - Magasinage (mois)</div>
+      <div class="kpi-value" data-kpi-value="invoices-magasinage">0</div>
+    </div>
+{% endif %}
+</div>
+
+{% if has_perm("chart.ca_mensuel") or has_perm("chart.ca_activite") %}
+<div class="charts-section">
+  <div class="chart-container">
+    <div class="chart-header">
+      <h2>Chiffre d'affaires mensuel (histogramme)</h2>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <label for="ca-mode-select" class="text-muted" style="font-size:0.9rem;margin-right:6px;">Vue :</label>
+        <select id="ca-mode-select" class="list-page-size">
+          <option value="timbrage">Timbrage</option>
+            <option value="total" >Total</option>
+
+          <option value="magasinage" selected>Magasinage</option>
+          <option value="agent">Agent</option>
+          <option value="surestarie">Surestarie</option>
+          <option value="detail">Détail (empilé)</option>
+        </select>
+        <span class="text-muted">Cliquez une barre pour voir les factures</span>
+      </div>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="barChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-container">
+    <h2>Chiffre d'affaires par activité</h2>
+    <div class="chart-wrapper">
+      <canvas id="activityChart"></canvas>
+    </div>
+    <div class="activity-list">
+      <div class="activity-item">
+        <div class="activity-name">
+          <span class="activity-dot" style="background:#3498db"></span>
+          <span>Timbrage</span>
+        </div>
+        <span data-activity-value="timbrage">0 TND</span>
+      </div>
+      <div class="activity-item">
+        <div class="activity-name">
+          <span class="activity-dot" style="background:#2ecc71"></span>
+          <span>Magasinage</span>
+        </div>
+        <span data-activity-value="magasinage">0 TND</span>
+      </div>
+      <div class="activity-item">
+        <div class="activity-name">
+          <span class="activity-dot" style="background:#f39c12"></span>
+          <span>Agent</span>
+        </div>
+        <div id="activity-agent-container">
+          <!-- Agent per-currency rows will be injected here -->
+          <span data-activity-value="agent">0 TND</span>
+        </div>
+      </div>
+      <div class="activity-item">
+        <div class="activity-name">
+          <span class="activity-dot" style="background:#e74c3c"></span>
+          <span>Surestarie</span>
+        </div>
+        <span data-activity-value="surestarie">0 TND</span>
+      </div>
+      <div id="activity-currency-totals" style="margin-top:8px;font-size:0.95rem;display:flex;gap:12px;">
+        <div><strong>TND:</strong> <span id="activity-total-tnd">0</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if has_perm("chart.freight_devise") %}
+<div class="chart-container currency-container" id="currency-container">
+  <div class="chart-header">
+    <h2>Marge sur fret par devise</h2>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+    <label for="devise-year-select" class="filter-label">Année :</label>
+    <select id="devise-year-select" class="list-page-size"></select>
+  </div>
+  <div class="chart-wrapper">
+    <canvas id="deviseChart"></canvas>
+  </div>
+  <div class="devise-commercial-summary">
+    <div class="list-header"   >
+      <div class="list-title" id="devise-commercial-title">Totaux par commercial</div>
+      <div class="list-actions" style="align-items:center;gap:8px;">
+        <div class="filter-label" id="devise-commercial-filter"></div>
+      </div>
+    </div>
+    <div class="table-responsive-taux">
+      <table class="list-table"   >
+      <!--      <table class="list-table devise-commercial-table">-->
+        <thead >
+          <tr>
+            <th>Devise</th>
+            <th>Commercial</th>
+            <th>Total achat</th>
+            <th>Total vente</th>
+            <th>Marge</th>
+          </tr>
+        </thead>
+        <tbody id="devise-commercial-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if has_perm("detail.factures_ff") %}
+<!-- Modal: Invoices for selected month -->
+<div id="invoices-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="invoices-modal-title">Factures</h3>
+      <div>
+        <button id="invoices-modal-close" class="modal-close" aria-label="Fermer">✕</button>
+      </div>
+    </div>
+    <div id="invoices-modal-info" class="modal-info" style="padding:0 20px 10px 20px; font-size:0.95rem; color:var(--text-muted);"></div>
+    <div style="overflow:auto;">
+      <table class="modal-table" id="invoices-modal-table">
+        <thead>
+          <tr>
+            <th>Libellé</th>
+            <th>Devise</th>
+            <th>Montant</th>
+            <th>Montant TVA</th>
+            <th>Montant TTC</th>
+            <th>Montant HT (TND)</th>
+          </tr>
+        </thead>
+        <tbody id="invoices-modal-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if has_perm("detail.timbrage") or has_perm("detail.agent") or has_perm("detail.magasinage") or has_perm("detail.surestaries") or has_perm("detail.freight") %}
+{% if request.args.get('listOnly') %}
+<div class="list-section" id="list-section" aria-live="polite">
+  <div class="list-header">
+    <div class="list-title" id="list-title">Liste</div>
+    <div class="list-actions">
+      <select class="list-page-size" id="list-page-size">
+        <option value="10">10</option>
+          <option value="12">12</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="0">Tous</option>
+      </select>
+      <div class="list-pagination">
+        <button type="button" class="list-page-btn" id="list-page-prev">Précédent</button>
+        <span class="list-page-info" id="list-page-info"></span>
+        <button type="button" class="list-page-btn" id="list-page-next">Suivant</button>
+      </div>
+      <div class="column-toggle">
+        <button type="button" class="column-toggle-btn" id="column-toggle-btn">Colonnes</button>
+        <div class="column-menu" id="column-menu"></div>
+      </div>
+      {% if has_perm("export.csv") or has_perm("export.xlsx") %}
+      <button id="export-csv-btn" class="list-page-btn" style="display:none;margin-left:8px;">Exporter CSV</button>
+      {% endif %}
+      <span class="list-loading" id="list-loading">
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        Chargement...
+      </span>
+      <input type="text" class="list-search" id="list-search" placeholder="Rechercher...">
+      <span class="text-muted" id="list-count"></span>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="list-table" id="list-table">
+      <thead>
+        <tr id="list-header-row"></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    window.PERMS = {
+      exportCsv: {{ has_perm("export.csv")|lower }},
+      exportXlsx: {{ has_perm("export.xlsx")|lower }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='js/management_dashboard.js') }}"></script>
+{% endblock %}

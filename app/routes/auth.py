@@ -1,0 +1,238 @@
+"""Routes d'authentification."""
+from datetime import datetime
+
+from flask import flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required, login_user, logout_user
+
+from app import db, login_manager
+from app.models.user import Role, User
+from app.routes import auth_bp
+from app.services.auth_service import AuthService
+
+
+@login_manager.user_loader
+def load_user(user_id: int):
+    return User.query.get(int(user_id))
+
+
+# ------------------------------------------------------------------ #
+#  Index / Login / Logout                                            #
+# ------------------------------------------------------------------ #
+
+@auth_bp.route("/")
+def index():
+    if current_user.is_authenticated:
+        return redirect(url_for("dashboard.index"))
+    return redirect(url_for("auth.login"))
+
+
+@auth_bp.route("/login", methods=["GET", "POST"])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("dashboard.index"))
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        if not username or not password:
+            flash("Veuillez fournir un nom d'utilisateur et un mot de passe.", "error")
+        else:
+            user = User.query.filter_by(username=username).first()
+            if user and user.check_password(password):
+                if user.is_active:
+                    user.last_login = datetime.utcnow()
+                    db.session.commit()
+                    login_user(user, remember=bool(request.form.get("remember")))
+                    flash("Connexion réussie !", "success")
+                    next_page = request.args.get("next")
+                    return redirect(next_page or url_for("dashboard.index"))
+                else:
+                    flash("Compte désactivé.", "error")
+            else:
+                flash("Nom d'utilisateur ou mot de passe incorrect.", "error")
+
+    return render_template("auth/login.html")
+
+
+@auth_bp.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    flash("Vous avez été déconnecté.", "info")
+    return redirect(url_for("auth.login"))
+
+
+# ------------------------------------------------------------------ #
+#  Changement de mot de passe                                        #
+# ------------------------------------------------------------------ #
+
+@auth_bp.route("/change-password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    if request.method == "POST":
+        current_password = request.form.get("current_password", "")
+        new_password = request.form.get("new_password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        if not current_user.check_password(current_password):
+            flash("Le mot de passe actuel est incorrect.", "error")
+            return redirect(url_for("auth.change_password"))
+
+        if new_password != confirm_password:
+            flash("Les nouveaux mots de passe ne correspondent pas.", "error")
+            return redirect(url_for("auth.change_password"))
+
+        if current_user.check_password(new_password):
+            flash("Le nouveau mot de passe doit être différent de l'ancien.", "error")
+            return redirect(url_for("auth.change_password"))
+
+        errors = AuthService.validate_password(new_password)
+        if errors:
+            flash(" ".join(errors), "error")
+            return redirect(url_for("auth.change_password"))
+
+        current_user.set_password(new_password)
+        db.session.commit()
+        AuthService.send_password_changed_email(current_user.email, current_user.username)
+        flash("Mot de passe modifié avec succès.", "success")
+        return redirect(url_for("dashboard.index"))
+
+    return render_template("auth/change_password.html")
+
+
+# ------------------------------------------------------------------ #
+#  Mot de passe oublié / reset                                       #
+# ------------------------------------------------------------------ #
+
+@auth_bp.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        sent = AuthService().send_reset_email(email)
+        # Message neutre côté sécurité, mais on informe en cas d'échec technique global.
+        if sent:
+            flash("Si cet e-mail existe, un lien de réinitialisation a été envoyé.", "info")
+        else:
+            flash(
+                "Si cet e-mail existe, un lien de réinitialisation a été envoyé. "
+                "Si vous ne recevez rien, contactez l'administrateur.",
+                "warning",
+            )
+        return redirect(url_for("auth.login"))
+    return render_template("auth/forgot_password.html")
+
+
+@auth_bp.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token: str):
+    if request.method == "POST":
+        new_password = request.form.get("new_password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        if new_password != confirm_password:
+            flash("Les mots de passe ne correspondent pas.", "error")
+            return redirect(url_for("auth.reset_password", token=token))
+
+        try:
+            AuthService().reset_password(token, new_password)
+            flash("Mot de passe réinitialisé avec succès. Veuillez vous connecter.", "success")
+            return redirect(url_for("auth.login"))
+        except Exception as e:
+            flash(str(e), "error")
+            return redirect(url_for("auth.reset_password", token=token))
+
+    return render_template("auth/reset_password.html", token=token)
+
+
+# ------------------------------------------------------------------ #
+#  Administration des utilisateurs                                   #
+# ------------------------------------------------------------------ #
+
+@auth_bp.route("/admin/users", methods=["GET"])
+@login_required
+def admin_users():
+    if current_user.role.name != "Admin":
+        flash("Accès refusé.", "error")
+        return redirect(url_for("dashboard.index"))
+    users = User.query.all()
+    roles = Role.query.all()
+    return render_template("admin/manage_users.html", users=users, roles=roles)
+
+
+@auth_bp.route("/admin/users/create", methods=["POST"])
+@login_required
+def admin_create_user():
+    if current_user.role.name != "Admin":
+        flash("Accès refusé.", "error")
+        return redirect(url_for("dashboard.index"))
+
+    try:
+        AuthService.create_user(
+            username=request.form.get("username", "").strip(),
+            email=request.form.get("email", "").strip(),
+            password=request.form.get("password", ""),
+            role_id=int(request.form.get("role_id", 0)),
+        )
+        flash("Utilisateur créé avec succès.", "success")
+    except Exception as e:
+        flash(str(e), "error")
+
+    return redirect(url_for("auth.admin_users"))
+
+
+@auth_bp.route("/admin/users/<int:user_id>/edit", methods=["POST"])
+@login_required
+def admin_edit_user(user_id: int):
+    if current_user.role.name != "Admin":
+        flash("Accès refusé.", "error")
+        return redirect(url_for("dashboard.index"))
+
+    try:
+        AuthService.update_user(user_id, request.form.to_dict())
+        flash("Utilisateur mis à jour.", "success")
+    except Exception as e:
+        flash(str(e), "error")
+
+    return redirect(url_for("auth.admin_users"))
+
+
+@auth_bp.route("/admin/users/<int:user_id>/delete", methods=["POST"])
+@login_required
+def admin_delete_user(user_id: int):
+    if current_user.role.name != "Admin":
+        flash("Accès refusé.", "error")
+        return redirect(url_for("dashboard.index"))
+
+    try:
+        AuthService.delete_user(user_id)
+        flash("Utilisateur supprimé.", "success")
+    except Exception as e:
+        flash(str(e), "error")
+
+    return redirect(url_for("auth.admin_users"))
+
+
+@auth_bp.route("/admin/users/<int:user_id>/toggle", methods=["POST"])
+@login_required
+def admin_toggle_user(user_id: int):
+    if current_user.role.name != "Admin":
+        flash("Accès refusé.", "error")
+        return redirect(url_for("dashboard.index"))
+
+    try:
+        user = AuthService.toggle_user_status(user_id)
+        status = "activé" if user.is_active else "désactivé"
+        flash(f"Utilisateur {status}.", "success")
+    except Exception as e:
+        flash(str(e), "error")
+
+    return redirect(url_for("auth.admin_users"))
+
+@auth_bp.route("/admin/roles", methods=["GET"])
+@login_required
+def admin_roles():
+    """Page de gestion des rôles et permissions."""
+    if current_user.role.name != "Admin":
+        flash("Accès refusé.", "error")
+        return redirect(url_for("dashboard.index"))
+    return render_template("admin/manage_roles.html")

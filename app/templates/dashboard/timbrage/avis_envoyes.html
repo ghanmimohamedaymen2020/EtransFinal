@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Avis Envoyés - E-Trans{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-12">
+        <h3 class="mb-4">
+            <i class="fas fa-check"></i> Avis Envoyés
+        </h3>
+        <p class="text-muted">Contient les BLS contenant des avis envoyés</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Numéro BL</th>
+                            <th>Dossier</th>
+                            <th>Date d'envoi</th>
+                            <th>Version</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for avis in avis %}
+                        <tr>
+                            <td><strong>{{ avis.numero_bl }}</strong></td>
+                            <td>{{ avis.dossier.numero }}</td>
+                            <td>
+                                {% if avis.date_envoi %}
+                                    {{ avis.date_envoi.strftime('%d/%m/%Y %H:%M') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">v{{ avis.version }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">Envoyé</span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Aucun avis envoyé</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">Retour au dashboard</a>
+    </div>
+</div>
+{% endblock %}

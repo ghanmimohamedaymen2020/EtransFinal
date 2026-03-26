@@ -1,0 +1,38 @@
+# Environnement Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Variables d'environnement
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+.continue/
+
+# Fichiers temporaires
+tmp_*.json
+*.tmp
+*.swp
+*.swo
+
+# Build / dist
+dist/
+build/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Base de données locale
+*.db
+*.sqlite3

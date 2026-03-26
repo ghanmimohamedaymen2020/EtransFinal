@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tableau de bord - Responsable Timbrage</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --color-primary: #2c3e50;
+      --color-secondary: #3498db;
+      --color-success: #27ae60;
+      --color-warning: #e67e22;
+      --color-danger: #e74c3c;
+      --color-info: #3498db;
+      --color-star: #f1c40f;
+      --color-light: #f8f9fa;
+      --color-dark: #2c3e50;
+      --color-border: #e0e0e0;
+      --border-radius: 10px;
+      --box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+      --transition: all 0.3s ease;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: var(--color-dark);
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 15px;
+      box-shadow: var(--box-shadow);
+      padding: 30px;
+    }
+    
+    /* Header section */
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid var(--color-border);
+    }
+    
+    .welcome-section h1 {
+      color: var(--color-primary);
+      font-size: 1.8rem;
+      margin-bottom: 5px;
+    }
+    
+    .welcome-message {
+      color: #666;
+      font-size: 1.1rem;
+    }
+    
+    .name-highlight {
+      color: var(--color-secondary);
+      font-weight: 600;
+    }
+    
+    .stars {
+      display: flex;
+      gap: 5px;
+      margin-top: 10px;
+    }
+    
+    .star {
+      color: var(--color-star);
+      font-size: 1.2rem;
+    }
+    
+    .stats-badge {
+      background: linear-gradient(135deg, var(--color-secondary), var(--color-info));
+      color: white;
+      padding: 10px 20px;
+      border-radius: var(--border-radius);
+      text-align: center;
+      min-width: 180px;
+    }
+    
+    .stats-badge .value {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    
+    .stats-badge .label {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+    
+    /* KPI Section */
+    .kpi-section {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .kpi-card {
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 20px;
+      box-shadow: var(--box-shadow);
+      border-left: 5px solid var(--color-primary);
+      transition: var(--transition);
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+    
+    .kpi-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .kpi-card.active {
+      border-left-width: 8px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      transform: translateY(-2px);
+    }
+    
+    .kpi-card.not-sent {
+      border-left-color: var(--color-danger);
+    }
+    
+    .kpi-card.sent {
+      border-left-color: var(--color-success);
+    }
+    
+    .kpi-card.to-send {
+      border-left-color: var(--color-warning);
+      margin-bottom: 0;
+    }
+    
+    .kpi-card.new {
+      border-left-color: var(--color-info);
+    }
+
+    /* Fixed height for specific KPI cards to keep visual alignment */
+    .kpi-card.not-sent,
+    .kpi-card.sent,
+    .kpi-card.new {
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    
+    .kpi-title {
+      font-size: 0.95rem;
+      color: #666;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    
+    .kpi-value {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin: 10px 0;
+    }
+    
+    .kpi-change {
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      color: #666;
+    }
+    
+    .change-up {
+      color: var(--color-success);
+    }
+    
+    .change-down {
+      color: var(--color-danger);
+    }
+    
+    /* Container pour la carte Priorité avec FCL/LCL */
+    .priority-with-shipping {
+      grid-column: 3;
+      position: relative;
+    }
+    
+    /* FCL/LCL Container - now in flow so it pushes charts down */
+    .shipping-container {
+      display: none;
+      position: static; /* in-flow so it moves content below */
+      width: 100%;
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 20px;
+      box-shadow: var(--box-shadow);
+      margin-top: 12px;
+      animation: fadeIn 0.35s ease;
+    }
+
+    .shipping-container.visible {
+      display: block;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Titre FCL/LCL */
+    .shipping-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 15px;
+      text-align: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    
+    /* Grille pour FCL et LCL côte à côte */
+    .shipping-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    /* Cartes FCL et LCL */
+    .shipping-card {
+      background: #f8f9fa;
+      border-radius: var(--border-radius);
+      padding: 20px;
+      text-align: center;
+      transition: var(--transition);
+      border-top: 4px solid transparent;
+    }
+    
+    .shipping-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .shipping-card.fcl {
+      border-top-color: #3498db;
+    }
+    
+    .shipping-card.lcl {
+      border-top-color: #e67e22;
+    }
+    
+    .shipping-type {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+    
+    .shipping-count {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: #2c3e50;
+      line-height: 1;
+      margin: 15px 0;
+    }
+    
+    .shipping-label {
+      color: #666;
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+    
+    .shipping-trend {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 10px;
+    }
+    
+    .trend-icon {
+      margin-right: 5px;
+      font-size: 0.9rem;
+    }
+    
+    .trend-up {
+      color: #27ae60;
+    }
+    
+    .trend-down {
+      color: #e74c3c;
+    }
+    
+    /* Charts Section - Positionné APRÈS les FCL/LCL */
+    .charts-section {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 30px;
+      margin-top: 30px;
+      clear: both;
+    }
+    
+    .chart-container {
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 25px;
+      box-shadow: var(--box-shadow);
+    }
+    
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .chart-header h2 {
+      color: var(--color-primary);
+      font-size: 1.4rem;
+    }
+    
+    .legend {
+      display: flex;
+      gap: 15px;
+      font-size: 0.9rem;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    
+    .finished {
+      background-color: var(--color-success);
+    }
+    
+    .unfinished {
+      background-color: var(--color-warning);
+    }
+    
+    .chart-wrapper {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+    
+    /* Pie chart specific */
+    .pie-chart-container {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .priority-list {
+      margin-top: 20px;
+    }
+    
+    .priority-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    
+    .priority-item:last-child {
+      border-bottom: none;
+    }
+    
+    .priority-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .priority-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    
+    .trim-1 { background-color: #3498db; }
+    .trim-2 { background-color: #2ecc71; }
+    .trim-3 { background-color: #e74c3c; }
+    .trim-4 { background-color: #f39c12; }
+    
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .kpi-section {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .priority-with-shipping {
+        grid-column: 2;
+      }
+      
+      .charts-section {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+      }
+      
+      .kpi-section {
+        grid-template-columns: 1fr;
+      }
+      
+      .priority-with-shipping {
+        grid-column: 1;
+      }
+      
+      .shipping-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      main {
+        padding: 15px;
+      }
+      
+      .chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      
+      .legend {
+        flex-wrap: wrap;
+      }
+      
+      .shipping-count {
+        font-size: 2.8rem;
+      }
+      
+      .shipping-type {
+        font-size: 1.3rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <!-- Header Section -->
+    <div class="dashboard-header">
+      <div class="welcome-section">
+        <h1>Tableau de Bord de gestion des tâches responsable timbrage</h1>
+        <p class="welcome-message">Bonjour <span class="name-highlight">Hedia</span> 🎉</p>
+        <div class="stars">
+          <i class="fas fa-star star"></i>
+          <i class="fas fa-star star"></i>
+          <i class="fas fa-star star"></i>
+          <i class="far fa-star star"></i>
+          <i class="far fa-star star"></i>
+        </div>
+      </div>
+      <div class="stats-badge">
+        <div class="value">3 ⭐ 5 ⭐ 1</div>
+        <div class="label">Performance du mois</div>
+      </div>
+    </div>
+    
+    <!-- KPI Cards -->
+    <div class="kpi-section">
+      <div class="kpi-card not-sent">
+        <div class="kpi-title">Avis non-envoyés</div>
+        <div class="kpi-value">24</div>
+        <div class="kpi-change change-up">
+          <i class="fas fa-arrow-up"></i> 12% vs. mois dernier
+        </div>
+      </div>
+      
+      <div class="kpi-card sent">
+        <div class="kpi-title">Avis envoyés</div>
+        <div class="kpi-value">156</div>
+        <div class="kpi-change change-up">
+          <i class="fas fa-arrow-up"></i> 8% vs. mois dernier
+        </div>
+      </div>
+      
+      <!-- Priority Card (shipping details moved outside kpi-section) -->
+      <div class="priority-with-shipping">
+        <div class="kpi-card to-send" id="priority-card">
+          <div class="kpi-title">Avis à envoyer (par priorité)</div>
+          <div class="kpi-value">42</div>
+          <div class="kpi-change change-down">
+            <i class="fas fa-arrow-down"></i> 5% vs. mois dernier
+          </div>
+        </div>
+      </div>
+      
+      <div class="kpi-card new">
+        <div class="kpi-title">Avis à envoyer (nouvelle version)</div>
+        <div class="kpi-value">18</div>
+        <div class="kpi-change change-up">
+          <i class="fas fa-arrow-up"></i> 15% vs. mois dernier
+        </div>
+      </div>
+    </div>
+    
+    <!-- Shipping container moved outside KPI section so it's not nested inside .kpi-section -->
+    <div class="shipping-container" aria-hidden="false">
+      <div class="shipping-title">Détails par type d'expédition</div>
+      <div class="shipping-grid">
+        <div class="shipping-card fcl">
+          <div class="shipping-type">FCL</div>
+          <div class="shipping-count">42</div>
+          <div class="shipping-label">Avis à traiter</div>
+          <div class="shipping-trend">
+            <span class="trend-icon trend-up"><i class="fas fa-arrow-up"></i></span>
+            <span>+3 depuis hier</span>
+          </div>
+        </div>
+
+        <div class="shipping-card lcl">
+          <div class="shipping-type">LCL</div>
+          <div class="shipping-count">28</div>
+          <div class="shipping-label">Avis à traiter</div>
+          <div class="shipping-trend">
+            <span class="trend-icon trend-down"><i class="fas fa-arrow-down"></i></span>
+            <span>-2 depuis hier</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Section - Positionné APRÈS les KPI -->
+    <div class="charts-section">
+      <!-- Line Chart -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <h2>Évolution des tâches</h2>
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-color finished"></div>
+              <span>Tâches finies</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color unfinished"></div>
+              <span>Tâches non finies</span>
+            </div>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="lineChart"></canvas>
+        </div>
+      </div>
+      
+      <!-- Pie Chart -->
+      <div class="chart-container pie-chart-container">
+        <h2>Traitement selon priorité</h2>
+        <div class="chart-wrapper">
+          <canvas id="pieChart"></canvas>
+        </div>
+        <div class="priority-list">
+          <div class="priority-item">
+            <div class="priority-name">
+              <div class="priority-dot trim-1"></div>
+              <span>1er trim.</span>
+            </div>
+            <span class="priority-value">35%</span>
+          </div>
+          <div class="priority-item">
+            <div class="priority-name">
+              <div class="priority-dot trim-2"></div>
+              <span>2e trim.</span>
+            </div>
+            <span class="priority-value">25%</span>
+          </div>
+          <div class="priority-item">
+            <div class="priority-name">
+              <div class="priority-dot trim-3"></div>
+              <span>3e trim.</span>
+            </div>
+            <span class="priority-value">20%</span>
+          </div>
+          <div class="priority-item">
+            <div class="priority-name">
+              <div class="priority-dot trim-4"></div>
+              <span>4e trim.</span>
+            </div>
+            <span class="priority-value">20%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Line Chart Data
+      const lineCtx = document.getElementById('lineChart').getContext('2d');
+      const lineChart = new Chart(lineCtx, {
+        type: 'line',
+        data: {
+          labels: ['Catégorie 1', 'Catégorie 2', 'Catégorie 3', 'Catégorie 4'],
+          datasets: [
+            {
+              label: 'Tâches finies',
+              data: [5, 3, 4, 6],
+              borderColor: '#27ae60',
+              backgroundColor: 'rgba(39, 174, 96, 0.1)',
+              borderWidth: 3,
+              fill: true,
+              tension: 0.3
+            },
+            {
+              label: 'Tâches non finies',
+              data: [2, 4, 3, 1],
+              borderColor: '#e67e22',
+              backgroundColor: 'rgba(230, 126, 34, 0.1)',
+              borderWidth: 3,
+              fill: true,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 6,
+              ticks: {
+                stepSize: 1
+              },
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              }
+            },
+            x: {
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              titleColor: '#fff',
+              bodyColor: '#fff'
+            }
+          }
+        }
+      });
+      
+      // Pie Chart Data
+      const pieCtx = document.getElementById('pieChart').getContext('2d');
+      const pieChart = new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+          labels: ['1er trim.', '2e trim.', '3e trim.', '4e trim.'],
+          datasets: [{
+            data: [35, 25, 20, 20],
+            backgroundColor: [
+              '#3498db',
+              '#2ecc71',
+              '#e74c3c',
+              '#f39c12'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `${context.label}: ${context.parsed}%`;
+                }
+              }
+            }
+          }
+        }
+      });
+      
+        // Get DOM elements
+        const priorityCard = document.getElementById('priority-card');
+        const priorityContainer = document.querySelector('.priority-with-shipping');
+        const shippingContainer = document.querySelector('.shipping-container');
+      
+      // Update KPI value to be the total of FCL + LCL
+      function updatePriorityKPIFromShipping() {
+        const fclCountEl = document.querySelector('.shipping-card.fcl .shipping-count');
+        const lclCountEl = document.querySelector('.shipping-card.lcl .shipping-count');
+        const kpiValueEl = priorityCard.querySelector('.kpi-value');
+        const fcl = fclCountEl ? parseInt(fclCountEl.textContent.replace(/[^0-9]/g, '')) || 0 : 0;
+        const lcl = lclCountEl ? parseInt(lclCountEl.textContent.replace(/[^0-9]/g, '')) || 0 : 0;
+        const sum = fcl + lcl;
+        if (kpiValueEl) kpiValueEl.textContent = sum;
+      }
+
+      // Initialize KPI on load
+      updatePriorityKPIFromShipping();
+      
+      // Click handler for priority card
+      priorityCard.addEventListener('click', function(e) {
+        // Toggle active state
+        const nowActive = priorityContainer.classList.toggle('active');
+
+        // Toggle external shipping container visibility
+        if (shippingContainer) {
+          shippingContainer.classList.toggle('visible', nowActive);
+        }
+
+        // Remove active state from other cards
+        document.querySelectorAll('.kpi-card').forEach(card => {
+          if (card !== priorityCard) {
+            card.classList.remove('active');
+          }
+        });
+      });
+      
+      // Add click handlers to other KPI cards
+      const otherCards = document.querySelectorAll('.kpi-card:not(#priority-card)');
+      otherCards.forEach(card => {
+        card.addEventListener('click', function() {
+          // Remove active state from priority container
+          priorityContainer.classList.remove('active');
+          if (shippingContainer) shippingContainer.classList.remove('visible');
+          
+          // Remove active state from all cards
+          document.querySelectorAll('.kpi-card').forEach(c => {
+            c.classList.remove('active');
+          });
+          
+          // Add active state to clicked card
+          this.classList.add('active');
+        });
+      });
+      
+      // Close FCL/LCL when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.priority-with-shipping') && !e.target.closest('.shipping-container')) {
+          priorityContainer.classList.remove('active');
+          if (shippingContainer) shippingContainer.classList.remove('visible');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

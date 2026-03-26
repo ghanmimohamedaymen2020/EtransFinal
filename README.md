@@ -1,0 +1,95 @@
+# E-trans Portal
+
+Portail de gestion du transport et de la facturation.
+
+## Stack technique
+
+- **Backend** : Flask 2.3, Flask-Login, Flask-SQLAlchemy
+- **Base de données** : SQL Server (via pyodbc)
+- **Auth** : Sessions Flask-Login + tokens JWT pour l'API
+- **Templates** : Jinja2
+
+## Structure du projet
+
+```
+etrans-portal/
+├── app/
+│   ├── __init__.py          # Factory Flask (create_app)
+│   ├── models/
+│   │   ├── user.py          # User, Role, PasswordResetToken
+│   │   └── transport.py    # Dossier, AvisArrivee
+│   ├── routes/
+│   │   ├── auth.py          # Login, logout, reset password, admin users
+│   │   ├── dashboard.py     # Redirection par rôle
+│   │   └── api/
+│   │       ├── dossiers.py  # CRUD dossiers, avis, profil
+│   │       ├── factures.py  # Routes AA & FF (2 500 → 1 700 lignes)
+│   │       └── freight.py   # Routes fret, résumés annuels, exports
+│   ├── services/
+│   │   ├── auth_service.py  # Logique auth, reset, gestion users
+│   │   └── dossier_service.py # Logique dossiers & avis
+│   ├── repositories/
+│   │   ├── base.py          # BaseRepository CRUD (sans doublon)
+│   │   └── dossier_repository.py
+│   ├── utils/
+│   │   ├── auth.py          # Décorateurs @token_required, @role_required
+│   │   ├── email.py         # send_email()
+│   │   └── exceptions.py   # Exceptions métier unifiées
+│   ├── static/
+│   │   ├── css/
+│   │   └── js/
+│   └── templates/
+│       ├── base.html
+│       ├── auth/
+│       ├── dashboard/
+│       ├── admin/
+│       ├── errors/
+│       └── main/
+├── config/
+│   └── settings.py          # DevelopmentConfig, ProductionConfig, TestingConfig
+├── tests/
+├── tools/                   # Scripts d'inspection DB
+├── deploy/                  # Fichiers de déploiement
+├── .env.example
+├── requirements.txt
+└── run.py
+```
+
+## Installation
+
+```bash
+# 1. Cloner le dépôt
+git clone <repo-url>
+cd etrans-portal
+
+# 2. Créer l'environnement virtuel
+python -m venv .venv
+.venv\Scripts\activate      # Windows
+# source .venv/bin/activate  # Linux/macOS
+
+# 3. Installer les dépendances
+pip install -r requirements.txt
+
+# 4. Configurer les variables d'environnement
+copy .env.example .env
+# Éditer .env avec vos paramètres
+
+# 5. Lancer
+python run.py
+```
+
+## Rôles disponibles
+
+| Rôle          | Dashboard             |
+|---------------|-----------------------|
+| Admin         | admin_dashboard       |
+| Timbrage      | timbrage_dashboard    |
+| Transit       | transit_dashboard     |
+| Documentation | documentation_dashboard |
+| Commercial    | commercial_dashboard  |
+| Management    | management_dashboard  |
+
+## API
+
+Toutes les routes API sont préfixées par `/api`.  
+Voir `API_DOCUMENTATION.md` pour le détail des endpoints.

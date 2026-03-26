@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil - E-Trans{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold mb-3">Bienvenue sur E-Trans</h1>
+                <p class="lead text-muted">Plateforme de gestion de transport TransGlory Tunisie</p>
+            </div>
+            
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h3 class="mb-4">À propos d'E-Trans</h3>
+                            <p class="text-muted">
+                                E-Trans est la plateforme numérique de TransGlory Tunisie, 
+                                conçue pour optimiser et digitaliser vos opérations de transport.
+                            </p>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Gestion simplifiée des commandes
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Suivi en temps réel des expéditions
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Reporting et analytiques avancés
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Interface utilisateur intuitive
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0">
+                                <div class="card-body text-center p-4">
+                                    <i class="fas fa-truck fa-4x text-primary mb-4"></i>
+                                    <h4 class="card-title">TransGlory Tunisie</h4>
+                                    <p class="card-text">
+                                        Leader dans le secteur du transport et de la logistique en Tunisie.
+                                    </p>
+                                    <div class="mt-4">
+                                        <p class="mb-1">
+                                            <i class="fas fa-phone me-2"></i>
+                                            +216 70 000 000
+                                        </p>
+                                        <p class="mb-1">
+                                            <i class="fas fa-envelope me-2"></i>
+                                            contact@transglory.tn
+                                        </p>
+                                        <p class="mb-0">
+                                            <i class="fas fa-map-marker-alt me-2"></i>
+                                            Tunis, Tunisie
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

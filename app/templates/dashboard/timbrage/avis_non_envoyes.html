@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Avis Non-Envoyés - E-Trans{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-12">
+        <h3 class="mb-4">
+            <i class="fas fa-envelope-open"></i> Avis Non-Envoyés
+        </h3>
+        <p class="text-muted">Contient tous les dossiers qui n'ont pas d'avis</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Numéro de dossier</th>
+                            <th>Type conteneur</th>
+                            <th>Date d'arrivée</th>
+                            <th>Inflammable</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dossier in dossiers %}
+                        <tr>
+                            <td><strong>{{ dossier.numero }}</strong></td>
+                            <td>
+                                <span class="badge bg-info">{{ dossier.type_conteneur }}</span>
+                            </td>
+                            <td>{{ dossier.date_arrivee.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>
+                                {% if dossier.contient_imo %}
+                                    <span class="badge bg-danger">Oui (IMO)</span>
+                                {% else %}
+                                    <span class="badge bg-success">Non</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="#" class="btn btn-sm btn-primary">Créer avis</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Aucun dossier sans avis</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">Retour au dashboard</a>
+    </div>
+</div>
+{% endblock %}

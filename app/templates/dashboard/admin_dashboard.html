@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Administrateur - E-Trans{% endblock %}
+
+{% block css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <div class="welcome-section">
+    <h1>
+      <i class="fas fa-tachometer-alt text-primary"></i> 
+      Dashboard Administrateur
+    </h1>
+    <p class="welcome-message">
+      <i class="fas fa-user-shield"></i> 
+      Bonjour <strong>{{ current_user.username }}</strong> · 
+      <span class="text-muted">
+        <i class="fas fa-calendar"></i> {{ now().strftime('%d/%m/%Y') if now else '' }}
+      </span>
+    </p>
+  </div>
+  <div class="text-muted">
+    <span class="status-badge status-success">
+      <i class="fas fa-check-circle"></i> Système opérationnel
+    </span>
+  </div>
+</div>
+
+<!-- Statistiques principales KPI -->
+<div class="kpi-section">
+  <div class="kpi-card" data-key="total-users" style="border-left-color: var(--color-info);">
+    <div class="kpi-title">
+      <i class="fas fa-users"></i> Total Utilisateurs
+    </div>
+    <div class="kpi-value" id="total-users">
+      <span class="spinner-border spinner-border-sm" role="status"></span>
+    </div>
+    <div class="kpi-sub">
+      <span class="kpi-trend trend-up">
+        <i class="fas fa-arrow-up"></i> +12%
+      </span>
+      vs mois dernier
+    </div>
+  </div>
+  
+  <div class="kpi-card" data-key="active-users" style="border-left-color: var(--color-success);">
+    <div class="kpi-title">
+      <i class="fas fa-user-check"></i> Utilisateurs Actifs
+    </div>
+    <div class="kpi-value" id="active-users">
+      <span class="spinner-border spinner-border-sm" role="status"></span>
+    </div>
+    <div class="kpi-sub">
+      <span id="active-users-sub" class="text-success"><i class="fas fa-circle"></i> En ligne maintenant</span>
+    </div>
+  </div>
+  
+  <div class="kpi-card" data-key="connexions-today" style="border-left-color: var(--color-warning);">
+    <div class="kpi-title">
+      <i class="fas fa-sign-in-alt"></i> Connexions Aujourd'hui
+    </div>
+    <div class="kpi-value" id="connexions-today">
+      <span class="spinner-border spinner-border-sm" role="status"></span>
+    </div>
+    <div class="kpi-sub">
+      <span class="kpi-trend trend-up">
+        <i class="fas fa-arrow-up"></i> +8%
+      </span>
+      vs hier
+    </div>
+  </div>
+  
+  <div class="kpi-card" data-key="total-dossiers" style="border-left-color: var(--color-primary);">
+    <div class="kpi-title">
+      <i class="fas fa-folder-open"></i> Total Dossiers
+    </div>
+    <div class="kpi-value" id="total-dossiers">
+      <span class="spinner-border spinner-border-sm" role="status"></span>
+    </div>
+    <div class="kpi-sub">
+      <span class="text-info"><i class="fas fa-file"></i> 156 ouverts ce mois</span>
+    </div>
+  </div>
+</div>
+
+<!-- Actions rapides -->
+<div class="quick-actions">
+  <a href="{{ url_for('auth.admin_roles') }}" class="action-card" style="border-left:4px solid #8e44ad;">
+  <div style="font-size:1.4rem;">🛡️</div>
+  <div><strong>Rôles & Permissions</strong><br><small>Gérer les accès par rôle</small></div>
+</a>
+<a href="{{ url_for('auth.admin_users') }}" class="action-card">
+    <div class="action-icon">
+      <i class="fas fa-users-cog"></i>
+    </div>
+    <h4 class="action-title">Gérer Utilisateurs</h4>
+    <p class="action-desc">Créer, modifier, désactiver des comptes</p>
+    <span class="badge bg-primary mt-2">Administration</span>
+  </a>
+  
+  <a href="#" class="action-card">
+    <div class="action-icon">
+      <i class="fas fa-user-tag"></i>
+    </div>
+    <h4 class="action-title">Gérer Rôles</h4>
+    <p class="action-desc">Permissions et niveaux d'accès</p>
+    <span class="badge bg-info mt-2">Sécurité</span>
+  </a>
+  
+  <a href="#" class="action-card">
+    <div class="action-icon">
+      <i class="fas fa-clipboard-list"></i>
+    </div>
+    <h4 class="action-title">Logs Système</h4>
+    <p class="action-desc">Historique complet des activités</p>
+    <span class="badge bg-warning mt-2">Audit</span>
+  </a>
+  
+  <a href="#" class="action-card">
+    <div class="action-icon">
+      <i class="fas fa-cog"></i>
+    </div>
+    <h4 class="action-title">Paramètres</h4>
+    <p class="action-desc">Configuration générale du système</p>
+    <span class="badge bg-secondary mt-2">Système</span>
+  </a>
+</div>
+
+<!-- Graphiques -->
+<div class="charts-section">
+  <div class="chart-container">
+    <div class="chart-header">
+      <h3>
+        <i class="fas fa-chart-line text-primary"></i>
+        Activité des 7 derniers jours
+      </h3>
+      <span class="badge bg-light text-dark">
+        <i class="fas fa-sync"></i> Temps réel
+      </span>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="activityChart"></canvas>
+    </div>
+    <div class="text-muted mt-3 small">
+      <i class="fas fa-info-circle"></i> Nombre de connexions journalières
+    </div>
+  </div>
+  
+  <div class="chart-container">
+    <div class="chart-header">
+      <h3>
+        <i class="fas fa-chart-pie text-success"></i>
+        Répartition par Rôle
+      </h3>
+      <span class="badge bg-light text-dark">
+        <i class="fas fa-users"></i> Utilisateurs
+      </span>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="rolesChart"></canvas>
+    </div>
+    <div class="mt-3" id="roles-legend" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"></div>
+  </div>
+</div>
+
+<!-- Informations système -->
+<div class="system-info">
+  <div class="system-header">
+    <i class="fas fa-server"></i>
+    <h3>Informations Système</h3>
+  </div>
+  
+  <div class="system-grid">
+    <div class="system-item">
+      <i class="fas fa-database"></i>
+      <div class="system-item-content">
+        <div class="system-label">Base de données</div>
+        <div class="system-value">SQL Server Express</div>
+      </div>
+      <span class="status-badge status-success">Connecté</span>
+    </div>
+    
+    <div class="system-item">
+      <i class="fas fa-code"></i>
+      <div class="system-item-content">
+        <div class="system-label">Framework</div>
+        <div class="system-value">Flask 3.1.2</div>
+      </div>
+      <span class="status-badge status-info">Stable</span>
+    </div>
+    
+    <div class="system-item">
+      <i class="fas fa-shield-alt"></i>
+      <div class="system-item-content">
+        <div class="system-label">Authentification</div>
+        <div class="system-value">Flask-Login + JWT</div>
+      </div>
+      <span class="status-badge status-success">Sécurisé</span>
+    </div>
+    
+    <div class="system-item">
+      <i class="fas fa-clock"></i>
+      <div class="system-item-content">
+        <div class="system-label">Dernière mise à jour</div>
+        <div class="system-value" id="last-update">Chargement...</div>
+      </div>
+      <span class="status-badge status-info">
+        <i class="fas fa-sync fa-spin"></i> Temps réel
+      </span>
+    </div>
+    
+    <div class="system-item">
+      <i class="fas fa-check-circle"></i>
+      <div class="system-item-content">
+        <div class="system-label">Statut global</div>
+        <div class="system-value">Opérationnel</div>
+      </div>
+      <span class="status-badge status-success">100%</span>
+    </div>
+    
+    <div class="system-item">
+      <i class="fas fa-user-shield"></i>
+      <div class="system-item-content">
+        <div class="system-label">Connecté en tant que</div>
+        <div class="system-value">{{ current_user.username }}</div>
+      </div>
+      <span class="status-badge status-primary">
+        <i class="fas fa-shield"></i> Administrateur
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Loading overlay pour les mises à jour -->
+<div id="global-loading" style="display: none; position: fixed; bottom: 20px; right: 20px; background: white; padding: 12px 20px; border-radius: 30px; box-shadow: var(--box-shadow); border: 1px solid var(--color-border); z-index: 9999;">
+  <span class="loading-spinner">
+    <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+    Mise à jour des données...
+  </span>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
+{% endblock %}
